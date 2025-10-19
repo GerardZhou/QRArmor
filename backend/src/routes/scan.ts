@@ -22,8 +22,8 @@ router.post("/", async (req, res) => {
     }
 
     // Step 2: Summarize only safe URLs
-    // const summary = await summarizeWithGemini(normalized);
-    // console.log(summary);
+    const summary = await summarizeWithGemini(normalized);
+    console.log(summary);
     console.log("safe URL:");
     return res.json({ status: "safe", link: normalized });
   } catch (err: any) {
