@@ -1,5 +1,5 @@
 import { CameraView } from "expo-camera";
-import { Stack } from "expo-router";
+import { Stack, useRouter } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -11,11 +11,15 @@ import {
   StyleSheet,
   Text,
   View,
+  TouchableOpacity,
 } from "react-native";
 import { Overlay } from "./Overlay";
 import { scanUrl } from "../../utils/api";
+import { addToHistory } from "../../utils/history";
+import Ionicons from '@expo/vector-icons/Ionicons';
 
 export default function Home() {
+  const router = useRouter();
   const qrLock = useRef(false);
   const appState = useRef(AppState.currentState);
   const [loading, setLoading] = useState(false);
@@ -40,6 +44,13 @@ export default function Home() {
       setLoading(true);
       const result = await scanUrl(url);
       setLoading(false);
+
+      // Save scan to history (best-effort)
+      try {
+        await addToHistory(url, result.status === 'safe');
+      } catch (err) {
+        console.warn('Failed to save scan to history', err);
+      }
 
       Alert.alert(
       "Scan Result",
@@ -74,7 +85,14 @@ export default function Home() {
       <Stack.Screen
         options={{
           title: "QRArmor",
-          headerShown: false,
+          headerShown: true,
+          headerTransparent: true,
+          headerTitleStyle: { color: '#fff' },
+          headerRight: () => (
+            <TouchableOpacity onPress={() => router.push('/history')} style={styles.historyButton}>
+              <Ionicons name="time-outline" size={24} color="#fff" />
+            </TouchableOpacity>
+          ),
         }}
       />
 
@@ -114,11 +132,20 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0,0,0,0.6)",
     justifyContent: "center",
     alignItems: "center",
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
   },
   loadingText: {
     color: "white",
     fontSize: 18,
     marginTop: 10,
     fontWeight: "500",
+  },
+  historyButton: {
+    marginRight: 12,
+    padding: 6,
   },
 });

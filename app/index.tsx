@@ -28,6 +28,11 @@ export default function Home() {
             </Text>
           </Pressable>
         </Link>
+        <Link href={"/history"} asChild>
+          <Pressable>
+            <Text style={styles.buttonStyle}>View History</Text>
+          </Pressable>
+        </Link>
       </View>
     </SafeAreaView>
   );
