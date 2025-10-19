@@ -1,5 +1,5 @@
 import { CameraView } from "expo-camera";
-import { Stack, useRouter } from "expo-router";
+import { Stack } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -11,16 +11,13 @@ import {
   StyleSheet,
   Text,
   View,
-  TouchableOpacity,
   Linking,
 } from "react-native";
-import { Overlay } from "./Overlay";
+import { Overlay } from "@/components/Overlay";
 import { scanUrl } from "../../utils/api";
 import { addToHistory } from "../../utils/history";
-import Ionicons from '@expo/vector-icons/Ionicons';
 
-export default function Home() {
-  const router = useRouter();
+export default function ScanScreen() {
   const qrLock = useRef(false);
   const appState = useRef(AppState.currentState);
   const [loading, setLoading] = useState(false);
@@ -99,7 +96,6 @@ export default function Home() {
               },
             ]
       );
-
     } catch (error) {
       setLoading(false);
       const errorMessage = error instanceof Error ? error.message : "Failed to scan URL for safety";
@@ -122,11 +118,6 @@ export default function Home() {
           headerShown: true,
           headerTransparent: true,
           headerTitleStyle: { color: '#fff' },
-          headerRight: () => (
-            <TouchableOpacity onPress={() => router.push('/history')} style={styles.historyButton}>
-              <Ionicons name="time-outline" size={24} color="#fff" />
-            </TouchableOpacity>
-          ),
         }}
       />
 
@@ -166,20 +157,11 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0,0,0,0.6)",
     justifyContent: "center",
     alignItems: "center",
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 0,
-    bottom: 0,
   },
   loadingText: {
     color: "white",
     fontSize: 18,
     marginTop: 10,
     fontWeight: "500",
-  },
-  historyButton: {
-    marginRight: 12,
-    padding: 6,
   },
 });

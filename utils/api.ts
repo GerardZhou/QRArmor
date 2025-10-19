@@ -14,12 +14,9 @@ interface ScanStats {
 }
 
 interface ScanResponse {
-  status: 'malicious' | 'safe';
+  status: 'malicious' | 'safe' | 'error';
   link: string;
-  analysis: {
-    stats: ScanStats;
-    detections: Detection[];
-  };
+  message?: string;
   summary?: string;
 }
 
