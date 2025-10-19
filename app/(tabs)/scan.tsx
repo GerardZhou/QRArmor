@@ -1,0 +1,167 @@
+import { CameraView } from "expo-camera";
+import { Stack } from "expo-router";
+import React, { useEffect, useRef, useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  AppState,
+  Platform,
+  SafeAreaView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  View,
+  Linking,
+} from "react-native";
+import { Overlay } from "@/components/Overlay";
+import { scanUrl } from "../../utils/api";
+import { addToHistory } from "../../utils/history";
+
+export default function ScanScreen() {
+  const qrLock = useRef(false);
+  const appState = useRef(AppState.currentState);
+  const [loading, setLoading] = useState(false);
+
+  // Reset the QR lock when app returns to foreground
+  useEffect(() => {
+    const subscription = AppState.addEventListener("change", (nextAppState) => {
+      if (
+        appState.current.match(/inactive|background/) &&
+        nextAppState === "active"
+      ) {
+        qrLock.current = false;
+      }
+      appState.current = nextAppState;
+    });
+
+    return () => subscription.remove();
+  }, []);
+
+  const handleScannedUrl = async (url: string) => {
+    try {
+      setLoading(true);
+      const result = await scanUrl(url);
+      setLoading(false);
+
+      if (result.status === 'error') {
+        throw new Error(result.message || 'Failed to scan URL');
+      }
+
+      // Save scan to history (best-effort)
+      try {
+        await addToHistory(url, result.status === 'safe');
+      } catch (err) {
+        console.warn('Failed to save scan to history', err);
+      }
+
+      const openURL = async () => {
+        try {
+          const supported = await Linking.canOpenURL(url);
+          if (supported) {
+            await Linking.openURL(url);
+          } else {
+            Alert.alert("Error", "Cannot open this URL");
+          }
+        } catch (error) {
+          console.error("Error opening URL:", error);
+          Alert.alert("Error", "Failed to open URL");
+        }
+      };
+
+      Alert.alert(
+        "Scan Result",
+        result.status === "malicious"
+          ? "⚠️ This URL is malicious!\n\nBlocked access for your safety."
+          : `✅ This URL is safe!\n\nSummary:\n${result.summary || "No summary available."}`,
+        result.status === "safe"
+          ? [
+              {
+                text: "Open URL",
+                onPress: openURL,
+              },
+              {
+                text: "Cancel",
+                onPress: () => {
+                  qrLock.current = false; // allow scanning again
+                },
+                style: 'cancel',
+              },
+            ]
+          : [
+              {
+                text: "OK",
+                onPress: () => {
+                  qrLock.current = false; // allow scanning again
+                },
+              },
+            ]
+      );
+    } catch (error) {
+      setLoading(false);
+      const errorMessage = error instanceof Error ? error.message : "Failed to scan URL for safety";
+      Alert.alert("Error", errorMessage, [
+        {
+          text: "OK",
+          onPress: () => {
+            qrLock.current = false; // reset after error
+          },
+        },
+      ]);
+    }
+  };
+
+  return (
+    <SafeAreaView style={StyleSheet.absoluteFillObject}>
+      <Stack.Screen
+        options={{
+          title: "QRArmor",
+          headerShown: true,
+          headerTransparent: true,
+          headerTitleStyle: { color: '#fff' },
+        }}
+      />
+
+      {Platform.OS === "android" ? <StatusBar hidden /> : null}
+
+      {/* QR Camera */}
+      <CameraView
+        style={StyleSheet.absoluteFillObject}
+        facing="back"
+        onBarcodeScanned={({ data }) => {
+          if (data && !qrLock.current) {
+            qrLock.current = true;
+            setTimeout(() => {
+              handleScannedUrl(data);
+            }, 500);
+          }
+        }}
+      />
+
+      {/* Custom Overlay Frame */}
+      <Overlay />
+
+      {/* Loading Overlay */}
+      {loading && (
+        <View style={styles.loadingOverlay}>
+          <ActivityIndicator size="large" color="#fff" />
+          <Text style={styles.loadingText}>Scanning...</Text>
+        </View>
+      )}
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  loadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    color: "white",
+    fontSize: 18,
+    marginTop: 10,
+    fontWeight: "500",
+  },
+});
