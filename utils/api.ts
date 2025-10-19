@@ -20,6 +20,7 @@ interface ScanResponse {
     stats: ScanStats;
     detections: Detection[];
   };
+  summary?: string;
 }
 
 export async function scanUrl(url: string): Promise<ScanResponse> {

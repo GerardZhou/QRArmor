@@ -18,14 +18,14 @@ router.post("/", async (req, res) => {
 
     if (vt.verdict === "malicious") {
       console.log("Blocked malicious URL:", normalized);
-      return res.json({ status: "malicious", link: normalized });
+      return res.json({ status: "malicious", link: normalized, summary: "Blocked — malicious content detected."});
     }
 
     // Step 2: Summarize only safe URLs
     const summary = await summarizeWithGemini(normalized);
-    console.log(summary);
-    console.log("safe URL:");
-    return res.json({ status: "safe", link: normalized });
+    // console.log(summary);
+    // console.log("safe URL:");
+    return res.json({ status: "safe", link: normalized, summary });
   } catch (err: any) {
     console.error(err);
     return res

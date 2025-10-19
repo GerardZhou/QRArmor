@@ -4,6 +4,7 @@ import * as cheerio from "cheerio";
 
 const apiKey = process.env.GOOGLE_GEMINI_API_KEY;
 if (!apiKey) throw new Error("Missing GOOGLE_GEMINI_API_KEY");
+
 const genAI = new GoogleGenerativeAI(apiKey);
 
 export async function summarizeWithGemini(url: string) {
@@ -21,12 +22,14 @@ export async function summarizeWithGemini(url: string) {
 
   // 4️⃣ Ask Gemini to summarize
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
-    const result = await model.generateContent(cleanedText);
-    const response = await result.response;
-    return response.text() || "No summary available.";
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+    const prompt = `Summarize the main ideas of the following webpage content in 5 concise sentences:\n\n${cleanedText}`;
+
+    const result = await model.generateContent(prompt);
+    const summary = await result.response.text();
+    return summary || "No summary available.";
   } catch (error) {
-    console.error('Gemini API error:', error);
+    console.error("Gemini API error:", error);
     return "Failed to generate summary.";
   }
 }

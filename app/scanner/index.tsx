@@ -42,19 +42,20 @@ export default function Home() {
       setLoading(false);
 
       Alert.alert(
-        "Scan Result",
-        result.status === "malicious"
-          ? "⚠️ This URL is malicious!"
-          : "✅ This URL is safe!",
-        [
-          {
-            text: "OK",
-            onPress: () => {
-              qrLock.current = false; // allow scanning again
-            },
+      "Scan Result",
+      result.status === "malicious"
+        ? "⚠️ This URL is malicious!\n\nBlocked access for your safety."
+        : `✅ This URL is safe!\n\nSummary:\n${result.summary || "No summary available."}`,
+      [
+        {
+          text: "OK",
+          onPress: () => {
+            qrLock.current = false; // allow scanning again
           },
-        ]
-      );
+        },
+      ]
+    );
+
     } catch (error) {
       setLoading(false);
       Alert.alert("Error", "Failed to scan URL for safety", [
