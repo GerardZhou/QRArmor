@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, Pressable } from 'react-native';
+import { View, Text, StyleSheet, FlatList, Pressable, Linking, Alert, TouchableOpacity } from 'react-native';
 import { Stack } from 'expo-router';
 import { useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -27,6 +27,49 @@ export default function History() {
 
   const formatDate = (timestamp: number) => {
     return new Date(timestamp).toLocaleString();
+  };
+
+  const handleUrlPress = async (url: string, isSafe: boolean) => {
+    if (!isSafe) {
+      Alert.alert(
+        "Warning",
+        "This URL was marked as malicious. Are you sure you want to open it?",
+        [
+          {
+            text: "Cancel",
+            style: "cancel"
+          },
+          {
+            text: "Open Anyway",
+            style: "destructive",
+            onPress: async () => {
+              try {
+                const supported = await Linking.canOpenURL(url);
+                if (supported) {
+                  await Linking.openURL(url);
+                } else {
+                  Alert.alert("Error", "Cannot open this URL");
+                }
+              } catch (error) {
+                Alert.alert("Error", "Failed to open URL");
+              }
+            }
+          }
+        ]
+      );
+      return;
+    }
+
+    try {
+      const supported = await Linking.canOpenURL(url);
+      if (supported) {
+        await Linking.openURL(url);
+      } else {
+        Alert.alert("Error", "Cannot open this URL");
+      }
+    } catch (error) {
+      Alert.alert("Error", "Failed to open URL");
+    }
   };
 
   return (
@@ -59,10 +102,13 @@ export default function History() {
                   color={item.isSafe ? '#4CAF50' : '#F44336'}
                 />
               </View>
-              <View style={styles.itemContent}>
-                <Text style={styles.url} numberOfLines={1}>{item.url}</Text>
+              <TouchableOpacity 
+                style={styles.itemContent}
+                onPress={() => handleUrlPress(item.url, item.isSafe)}
+              >
+                <Text style={[styles.url, styles.link]} numberOfLines={1}>{item.url}</Text>
                 <Text style={styles.timestamp}>{formatDate(item.timestamp)}</Text>
-              </View>
+              </TouchableOpacity>
             </View>
           )}
           ItemSeparatorComponent={() => <View style={styles.separator} />}
@@ -115,5 +161,9 @@ const styles = StyleSheet.create({
   clearButtonText: {
     color: '#007AFF',
     fontSize: 16,
+  },
+  link: {
+    color: '#007AFF',
+    textDecorationLine: 'underline',
   },
 });

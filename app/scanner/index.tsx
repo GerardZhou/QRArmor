@@ -12,6 +12,7 @@ import {
   Text,
   View,
   TouchableOpacity,
+  Linking,
 } from "react-native";
 import { Overlay } from "./Overlay";
 import { scanUrl } from "../../utils/api";
@@ -45,6 +46,10 @@ export default function Home() {
       const result = await scanUrl(url);
       setLoading(false);
 
+      if (result.status === 'error') {
+        throw new Error(result.message || 'Failed to scan URL');
+      }
+
       // Save scan to history (best-effort)
       try {
         await addToHistory(url, result.status === 'safe');
@@ -52,24 +57,53 @@ export default function Home() {
         console.warn('Failed to save scan to history', err);
       }
 
+      const openURL = async () => {
+        try {
+          const supported = await Linking.canOpenURL(url);
+          if (supported) {
+            await Linking.openURL(url);
+          } else {
+            Alert.alert("Error", "Cannot open this URL");
+          }
+        } catch (error) {
+          console.error("Error opening URL:", error);
+          Alert.alert("Error", "Failed to open URL");
+        }
+      };
+
       Alert.alert(
-      "Scan Result",
-      result.status === "malicious"
-        ? "⚠️ This URL is malicious!\n\nBlocked access for your safety."
-        : `✅ This URL is safe!\n\nSummary:\n${result.summary || "No summary available."}`,
-      [
-        {
-          text: "OK",
-          onPress: () => {
-            qrLock.current = false; // allow scanning again
-          },
-        },
-      ]
-    );
+        "Scan Result",
+        result.status === "malicious"
+          ? "⚠️ This URL is malicious!\n\nBlocked access for your safety."
+          : `✅ This URL is safe!\n\nSummary:\n${result.summary || "No summary available."}`,
+        result.status === "safe"
+          ? [
+              {
+                text: "Open URL",
+                onPress: openURL,
+              },
+              {
+                text: "Cancel",
+                onPress: () => {
+                  qrLock.current = false; // allow scanning again
+                },
+                style: 'cancel',
+              },
+            ]
+          : [
+              {
+                text: "OK",
+                onPress: () => {
+                  qrLock.current = false; // allow scanning again
+                },
+              },
+            ]
+      );
 
     } catch (error) {
       setLoading(false);
-      Alert.alert("Error", "Failed to scan URL for safety", [
+      const errorMessage = error instanceof Error ? error.message : "Failed to scan URL for safety";
+      Alert.alert("Error", errorMessage, [
         {
           text: "OK",
           onPress: () => {
